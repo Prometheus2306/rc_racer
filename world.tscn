@@ -1,0 +1,97 @@
+[gd_scene load_steps=11 format=3 uid="uid://cjd478y5rc4jo"]
+
+[ext_resource type="PackedScene" uid="uid://ckj7oukniwr68" path="res://rc_car.tscn" id="1_f3sb7"]
+[ext_resource type="Script" uid="uid://cmnjt3rq2or2x" path="res://race_manager.gd" id="2_fj7yv"]
+[ext_resource type="PackedScene" uid="uid://dk25dvyrh0nra" path="res://checkpoint.tscn" id="3_tlwt5"]
+[ext_resource type="Script" uid="uid://dx8kxv4w4tbdo" path="res://camera_gimbal.gd" id="4_aqk2v"]
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_f3sb7"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tlwt5"]
+albedo_color = Color(0, 0.312813, 0.241224, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_aqk2v"]
+albedo_color = Color(0.361811, 0.590448, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_036b0"]
+albedo_color = Color(0.128399, 0.611105, 0.609425, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dwbse"]
+albedo_color = Color(0.793255, 0.831181, 0.916632, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_aqk2v"]
+size = Vector3(150, 1, 100)
+
+[node name="World" type="Node3D"]
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+visible = false
+shape = SubResource("WorldBoundaryShape3D_f3sb7")
+
+[node name="GroundBase" type="CSGBox3D" parent="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+size = Vector3(60, 0.2, 40)
+material = SubResource("StandardMaterial3D_tlwt5")
+
+[node name="Track" type="CSGCombiner3D" parent="StaticBody3D"]
+use_collision = true
+
+[node name="CSGBox3D" type="CSGBox3D" parent="StaticBody3D/Track"]
+size = Vector3(80, 1, 40)
+material = SubResource("StandardMaterial3D_aqk2v")
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="StaticBody3D/Track"]
+operation = 2
+size = Vector3(60, 1, 20)
+material = SubResource("StandardMaterial3D_036b0")
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="StaticBody3D/Track"]
+size = Vector3(40, 0.8, 10)
+material = SubResource("StandardMaterial3D_dwbse")
+
+[node name="RCCar" parent="." instance=ExtResource("1_f3sb7")]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0, 0.6, 7)
+speed = 15.0
+acceleration = 20.0
+friction = 20.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, 0.383022, -0.321394, 0, 0.642788, 0.766044, 0.5, -0.663414, 0.55667, 0, 0, 0)
+shadow_enabled = true
+
+[node name="RaceManager" type="Node" parent="."]
+script = ExtResource("2_fj7yv")
+
+[node name="Checkpoint" parent="." groups=["checkpoints"] instance=ExtResource("3_tlwt5")]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -10, 0, 7.5)
+
+[node name="Checkpoint2" parent="." groups=["checkpoints"] instance=ExtResource("3_tlwt5")]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -10, 0, -7.5)
+checkpoint_id = 1
+
+[node name="Checkpoint3" parent="." groups=["checkpoints"] instance=ExtResource("3_tlwt5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 0)
+checkpoint_id = 2
+
+[node name="CameraGimbal" type="Node3D" parent="." node_paths=PackedStringArray("target")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00244331, 1.90735e-06, 0.0975657)
+script = ExtResource("4_aqk2v")
+target = NodePath("../RCCar")
+track_limits = Rect2(-30, 10, 60, 20)
+
+[node name="Camera3D" type="Camera3D" parent="CameraGimbal"]
+transform = Transform3D(0.707107, -0.353553, 0.612373, 0, 0.866026, 0.5, -0.707107, -0.353553, 0.612373, 15, 15, 15)
+projection = 1
+size = 30.0
+
+[node name="OutOfBoundsArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="OutOfBoundsArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 0)
+shape = SubResource("BoxShape3D_aqk2v")
+
+[connection signal="body_entered" from="OutOfBoundsArea" to="RaceManager" method="_on_out_of_bounds_area_body_entered"]
