@@ -1,57 +1,21 @@
-[gd_scene load_steps=4 format=3 uid="uid://ckj7oukniwr68"]
+[gd_scene load_steps=3 format=3 uid="uid://ckj7oukniwr68"]
 
 [ext_resource type="Script" uid="uid://sb03rqfyf8n4" path="res://rc_car.gd" id="1_frn8f"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_frn8f"]
-size = Vector3(2, 1.2, 1)
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_rc1"]
+radius = 0.55
+height = 2.05
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_frn8f"]
-albedo_color = Color(0.673108, 0, 0.154251, 1)
-metallic = 0.69
-
-[node name="RCCar" type="CharacterBody3D" groups=["player"]]
-collision_mask = 2
+[node name="RCCar" type="CharacterBody3D" groups=["racers"]]
+collision_mask = 7
 script = ExtResource("1_frn8f")
-acceleration = 10.0
-friction = 10.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-shape = SubResource("BoxShape3D_frn8f")
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
+shape = SubResource("CapsuleShape3D_rc1")
 
-[node name="CarModel" type="CSGCombiner3D" parent="."]
-
-[node name="CSGBox3D" type="CSGBox3D" parent="CarModel"]
-size = Vector3(1.2, 0.4, 2)
-material = SubResource("StandardMaterial3D_frn8f")
-
-[node name="CSGCylinder3D" type="CSGCylinder3D" parent="CarModel"]
-transform = Transform3D(-4.37114e-08, -1, 0, -4.37114e-08, 1.91069e-15, -1, 1, -4.37114e-08, -4.37114e-08, 0.8, -0.2, 0.6)
-radius = 0.4
-height = 0.3
-sides = 16
-
-[node name="CSGCylinder3D2" type="CSGCylinder3D" parent="CarModel"]
-transform = Transform3D(-4.37114e-08, -1, 0, -4.37114e-08, 1.91069e-15, -1, 1, -4.37114e-08, -4.37114e-08, -0.8, -0.2, 0.6)
-radius = 0.4
-height = 0.3
-sides = 16
-
-[node name="CSGCylinder3D3" type="CSGCylinder3D" parent="CarModel"]
-transform = Transform3D(-4.37114e-08, -1, 0, -4.37114e-08, 1.91069e-15, -1, 1, -4.37114e-08, -4.37114e-08, 0.8, -0.2, -0.6)
-radius = 0.4
-height = 0.3
-sides = 16
-
-[node name="CSGCylinder3D4" type="CSGCylinder3D" parent="CarModel"]
-transform = Transform3D(-4.37114e-08, -1, 0, -4.37114e-08, 1.91069e-15, -1, 1, -4.37114e-08, -4.37114e-08, -0.8, -0.2, -0.6)
-radius = 0.4
-height = 0.3
-sides = 16
+[node name="CarModel" type="Node3D" parent="."]
 
 [node name="RayCast3D" type="RayCast3D" parent="."]
-target_position = Vector3(0, -3, 0)
-
-[node name="Timer" type="Timer" parent="."]
-autostart = true
-
-[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
+target_position = Vector3(0, -2.6, 0)
+collision_mask = 6

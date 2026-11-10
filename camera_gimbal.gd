@@ -1,41 +1,79 @@
-# CameraGimbal.gd
 extends Node3D
 
-# --- EXPORT VARIABLES ---
-# We can set these from the Inspector in the editor.
-
-# The node we want the camera to follow (our car).
 @export var target: Node3D
+@export var follow_speed: float = 7.5
+@export var track_limits: Rect2 = Rect2(-52.0, -36.0, 104.0, 72.0)
 
-# How quickly the camera catches up to the player. Higher is faster.
-@export var follow_speed = 5.0
+const CAMERA_MODES: Array[String] = [
+	"Funk-Flitzer Klassik",
+	"Papier-Isometrisch",
+	"Diorama-Nah",
+]
 
-# The rectangular boundaries of our track. We will define this visually.
-# The 'x' and 'y' of the Rect2's position map to the world's X and Z.
-# The 'x' and 'y' of the Rect2's size map to the world's width and depth.
-@export var track_limits: Rect2
+var camera_mode: int = 0
+var showcase_mode: bool = true
+var _showcase_angle: float = 0.0
+
+@onready var cam: Camera3D = $Camera3D
 
 
-func _process(delta):
-	# If no target is set, do nothing.
+func _ready() -> void:
+	apply_camera_mode(0)
+
+
+func cycle_camera_mode() -> String:
+	camera_mode = (camera_mode + 1) % CAMERA_MODES.size()
+	apply_camera_mode(camera_mode)
+	return CAMERA_MODES[camera_mode]
+
+
+func apply_camera_mode(mode_idx: int) -> void:
+	camera_mode = posmod(mode_idx, CAMERA_MODES.size())
+	if cam == null:
+		return
+
+	var local_eye := Vector3(0.0, 27.5, 21.5)
+	match camera_mode:
+		0: # Funk-Flitzer Klassik (Elevated 3/4 bird's-eye tabletop perspective)
+			cam.projection = Camera3D.PROJECTION_PERSPECTIVE
+			cam.fov = 43.0
+			local_eye = Vector3(0.0, 27.5, 21.5)
+		1: # Papier-Isometrisch (Orthographic isometric diorama)
+			cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+			cam.size = 31.0
+			local_eye = Vector3(19.0, 22.0, 19.0)
+		2: # Diorama-Nah (Closer action tabletop angle)
+			cam.projection = Camera3D.PROJECTION_PERSPECTIVE
+			cam.fov = 47.0
+			local_eye = Vector3(0.0, 17.5, 16.0)
+
+	cam.transform = Transform3D(Basis.looking_at(-local_eye.normalized(), Vector3.UP), local_eye)
+
+
+func _process(delta: float) -> void:
+	if showcase_mode:
+		_showcase_angle += delta * 0.28
+		var focus := Vector3(cos(_showcase_angle) * 14.0, 0.0, 10.0 + sin(_showcase_angle * 0.8) * 10.0)
+		global_position = global_position.lerp(focus, 3.0 * delta)
+		return
+
 	if not is_instance_valid(target):
 		return
 
-	# --- SMOOTH FOLLOW ---
-	# We use lerp (linear interpolation) to smoothly move the camera's position
-	# towards the target's position. This prevents jittery movement.
-	var target_position = target.global_position
-	self.global_position = self.global_position.lerp(target_position, follow_speed * delta)
-	
-	# --- CLAMPING LOGIC ---
-	# Now, we make sure the smoothed position doesn't go outside our track limits.
-	var new_pos = self.global_position
-	
-	# Clamp the X position
-	new_pos.x = clamp(new_pos.x, track_limits.position.x, track_limits.position.x + track_limits.size.x)
-	
-	# Clamp the Z position (using the Rect2's 'y' properties for Z)
-	new_pos.z = clamp(new_pos.z, track_limits.position.y, track_limits.position.y + track_limits.size.y)
-	
-	# Apply the final, clamped position.
-	self.global_position = new_pos
+	var target_pos := target.global_position
+	# Velocity look-ahead so player sees upcoming turns & hazards clearly!
+	if target is CharacterBody3D:
+		var v := (target as CharacterBody3D).velocity
+		var lead := Vector3(v.x, 0.0, v.z) * 0.22
+		if lead.length() > 6.0:
+			lead = lead.normalized() * 6.0
+		target_pos += lead
+
+	target_pos.y = lerpf(global_position.y, maxf(target.global_position.y * 0.5, 0.0), 4.0 * delta)
+	var smoothed := global_position.lerp(target_pos, follow_speed * delta)
+
+	if track_limits.size.x > 1.0 and track_limits.size.y > 1.0:
+		smoothed.x = clampf(smoothed.x, track_limits.position.x, track_limits.position.x + track_limits.size.x)
+		smoothed.z = clampf(smoothed.z, track_limits.position.y, track_limits.position.y + track_limits.size.y)
+
+	global_position = smoothed
